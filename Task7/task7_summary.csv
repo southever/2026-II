@@ -1,0 +1,39 @@
+Section,Scenario,KeyVariable,Value,Unit,Source,Remark
+EV impact,EV-S1 home charge,EV annual energy,2411.79,kWh,TaskC/EV_strategy_compare.csv,到家即充基准
+EV impact,EV-S1 home charge,total annual load,9551.15,kWh,TaskC/EV_strategy_compare.csv,含基础负荷和EV
+EV impact,EV-S1 home charge,peak load,10.50,kW,TaskC/EV_strategy_compare.csv,全年峰值最高
+EV impact,EV-S1 home charge,evening peak load,10.50,kW,TaskC/EV_strategy_compare.csv,晚高峰压力最大
+EV impact,EV-S2 valley delay,EV annual energy,2380.00,kWh,TaskC/EV_strategy_compare.csv,谷时延迟充电
+EV impact,EV-S2 valley delay,total annual load,9519.36,kWh,TaskC/EV_strategy_compare.csv,含基础负荷和EV
+EV impact,EV-S2 valley delay,peak load,8.81,kW,TaskC/EV_strategy_compare.csv,全年峰值低于S1
+EV impact,EV-S2 valley delay,evening peak load,3.50,kW,TaskC/EV_strategy_compare.csv,晚高峰最低
+EV impact,EV-S3 PV surplus,EV annual energy,2368.73,kWh,TaskC/EV_strategy_compare.csv,光伏富余优先
+EV impact,EV-S3 PV surplus,total annual load,9508.09,kWh,TaskC/EV_strategy_compare.csv,含基础负荷和EV
+EV impact,EV-S3 PV surplus,peak load,8.81,kW,TaskC/EV_strategy_compare.csv,全年峰值低于S1
+EV impact,EV-S3 PV surplus,evening peak load,7.88,kW,TaskC/EV_strategy_compare.csv,晚高峰介于S1和S2之间
+Storage capacity,EV-S2 5kWh/2kW,annual net cost,-4149.10,Yuan/year,TaskD/storage_scan_S2.csv,任务五容量扫描
+Storage capacity,EV-S2 5kWh/2kW,self-use rate,18.18,%,TaskD/storage_scan_S2.csv,小容量投资最低
+Storage capacity,EV-S2 5kWh/2kW,investment,9100,Yuan,TaskD/storage_scan_S2.csv,电池+PCS
+Storage capacity,EV-S2 10kWh/2kW,annual net cost,-2982.24,Yuan/year,TaskD/storage_scan_S2.csv,容量增加后净收益下降
+Storage capacity,EV-S2 10kWh/2kW,self-use rate,22.27,%,TaskD/storage_scan_S2.csv,自发自用率提高
+Storage capacity,EV-S2 10kWh/2kW,investment,16600,Yuan,TaskD/storage_scan_S2.csv,投资增加
+Storage capacity,EV-S2 20kWh/2kW,annual net cost,-1153.04,Yuan/year,TaskD/storage_scan_S2.csv,容量继续增加经济性下降
+Storage capacity,EV-S2 20kWh/2kW,self-use rate,29.88,%,TaskD/storage_scan_S2.csv,自发自用率提高但不经济
+Storage capacity,EV-S2 20kWh/2kW,investment,31600,Yuan,TaskD/storage_scan_S2.csv,投资较高
+Storage capacity,EV-S2 40kWh/2kW,annual net cost,-164.91,Yuan/year,TaskD/storage_scan_S2.csv,大容量收益被投资和售电损失抵消
+Storage capacity,EV-S2 40kWh/2kW,self-use rate,34.34,%,TaskD/storage_scan_S2.csv,自发自用率最高但经济性差
+Storage capacity,EV-S2 40kWh/2kW,investment,61600,Yuan,TaskD/storage_scan_S2.csv,投资最高
+Storage power,EV-S2 10kWh/2kW,peak import,9.88,kW,TaskD/storage_scan_S2.csv,低功率方案
+Storage power,EV-S2 10kWh/10kW,peak import,15.41,kW,TaskD/storage_scan_S2.csv,高功率可能抬高瞬时购电峰值
+Dispatch strategy,EV-S2 PV_FIRST,annual net cost,-6135.13,Yuan/year,TaskE/strategy_compare.csv,光伏优先消纳
+Dispatch strategy,EV-S2 PV_FIRST,self-use rate,18.18,%,TaskE/strategy_compare.csv,自发自用率较高
+Dispatch strategy,EV-S2 PV_FIRST,peak import,8.81,kW,TaskE/strategy_compare.csv,峰值较低
+Dispatch strategy,EV-S2 PV_FIRST,equivalent cycles,221.81,cycles/year,TaskE/strategy_compare.csv,循环次数较低
+Dispatch strategy,EV-S2 TOU_PRICE,annual net cost,-6162.33,Yuan/year,TaskE/strategy_compare.csv,年净电费最低
+Dispatch strategy,EV-S2 TOU_PRICE,self-use rate,17.81,%,TaskE/strategy_compare.csv,自发自用率下降
+Dispatch strategy,EV-S2 TOU_PRICE,peak import,10.61,kW,TaskE/strategy_compare.csv,峰值升高
+Dispatch strategy,EV-S2 TOU_PRICE,equivalent cycles,256.16,cycles/year,TaskE/strategy_compare.csv,循环次数增加
+Dispatch strategy,EV-S2 DAYAHEAD_FORECAST,annual net cost,-6135.34,Yuan/year,TaskE/strategy_compare.csv,规则型预测
+Dispatch strategy,EV-S2 DAYAHEAD_FORECAST,equivalent cycles,221.71,cycles/year,TaskE/strategy_compare.csv,寿命友好
+Dispatch strategy,EV-S2 ML_FORECAST,annual net cost,-6135.34,Yuan/year,TaskE/strategy_compare.csv,机器学习预测
+Dispatch strategy,EV-S2 ML_FORECAST,equivalent cycles,221.71,cycles/year,TaskE/strategy_compare.csv,作为创新框架展示

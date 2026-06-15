@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>家庭光伏-储能-EV 系统课程项目报告</title>
+<link href="assets/hp-deck.css" rel="stylesheet"/>
+</head>
+<body>
+<main class="deck" id="deck">
+<section class="slide title-slide" data-section="Final presentation" data-title="标题页">
+<div class="title-block">
+<p class="kicker">Engineering Practice &amp; Technology Innovation II</p>
+<h1>含电动汽车充电的家庭光伏—储能系统全年仿真与容量设计报告</h1>
+<p class="subtitle">基于全年 5 分钟分辨率的负荷、光伏、EV 行为与储能策略综合评估</p>
+</div>
+<div class="title-meta">
+<span>课程项目报告 · 答辩展示版</span>
+<span>PV · Battery · EV · TOU · Forecast</span>
+</div>
+<aside class="notes"><p>本报告研究对象为含电动汽车充电负荷的家庭光伏—储能系统。研究目标不是单独计算某一设备容量，而是在统一参数口径下，评估光伏出力、家庭基础负荷、电动汽车充电行为与储能运行策略之间的耦合关系。</p><p>报告采用全年 5 分钟时间分辨率进行仿真，重点回答三个工程问题：EV 接入后是否会放大峰值负荷；储能容量和功率是否越大越好；在不同运行目标下应如何选择容量、功率和控制策略。</p></aside>
+</section>
+<section class="slide" data-section="Problem framing" data-title="系统问题">
+<div class="header">
+<div>
+<p class="kicker">01 / 项目问题</p>
+<h2>问题不是“电够不够”，而是“时间是否匹配”</h2>
+</div>
+<div class="small">家庭光伏-储能-EV 能量流</div>
+</div>
+<div class="content split-40-60">
+<div class="bullets">
+<div class="bullet">光伏白天集中发电，家庭负荷和 EV 充电常在早晚出现。</div>
+<div class="bullet">储能的意义是把电量从富余时段转移到缺口时段。</div>
+<div class="bullet">EV 是否造成峰值压力，取决于充电策略，而不只是年用电量。</div>
+</div>
+<div class="system-diagram">
+<div class="node">光伏<br/><span class="small">PV</span></div>
+<div class="node primary">家庭能量管理</div>
+<div class="node">电网<br/><span class="small">Grid</span></div>
+<div class="node">家庭负荷</div>
+<div class="node dark">储能<br/>Battery</div>
+<div class="node">上网售电</div>
+<div class="node">EV 充电</div>
+<div class="node">分时电价</div>
+<div class="node">策略优化</div>
+</div>
+</div>
+<aside class="notes"><p>家庭光伏系统的核心矛盾并不是年度总电量是否充足，而是发电与用电在时间上的不匹配。光伏主要集中在白天出力，而家庭晚间用电和 EV 充电往往发生在光伏出力下降之后。</p><p>因此，本报告将系统问题定义为“时间匹配问题”：如何通过 EV 充电时段调整、储能充放电控制和分时电价响应，把白天富余光伏电量尽可能转移到晚间负荷缺口时段，同时避免引入过高投资和电池循环损耗。</p></aside>
+</section>
+<section class="slide" data-section="Work map" data-title="工作总览">
+<div class="header">
+<div>
+<p class="kicker">02 / 成果链条</p>
+<h2>从参数统一到综合结论，形成完整工程评估链</h2>
+</div>
+<div class="small">A / B / C / D / E / Task7</div>
+</div>
+<div class="content">
+<div class="flow">
+<div class="step"><div class="num">A</div><strong>统一口径</strong><span>参数、电价、指标、报告主线</span></div>
+<div class="step"><div class="num">B</div><strong>负荷与光伏</strong><span>全年基础负荷、PV 矩阵、统计图</span></div>
+<div class="step"><div class="num">C</div><strong>EV 建模</strong><span>SOC、出行、三种充电策略</span></div>
+<div class="step"><div class="num">D</div><strong>储能选型</strong><span>容量/功率扫描、成本、寿命</span></div>
+<div class="step"><div class="num">E</div><strong>策略优化</strong><span>峰谷、预测、机器学习尝试</span></div>
+<div class="step"><div class="num">7</div><strong>综合结论</strong><span>四个问题、条件化推荐</span></div>
+</div>
+<div class="band">
+<div class="quote">最终结论不写成“绝对最优”，而是按不同目标给出条件化推荐。</div>
+</div>
+</div>
+<aside class="notes"><p>本项目按照工程评估流程组织。首先统一模型参数、电价口径、成本假设和评价指标；随后建立家庭基础负荷、光伏出力和 EV 充电行为模型；在此基础上进行储能容量与功率扫描，并比较不同调度策略。</p><p>这种组织方式使各任务之间形成闭环：B、C 提供系统输入，D 评估硬件配置，E 评估运行策略，任务七将结果转化为综合判断和条件化推荐。最终结论不追求单一绝对最优，而是针对不同目标给出可解释方案。</p></aside>
+</section>
+<section class="slide" data-section="Model setting" data-title="统一参数">
+<div class="header">
+<div>
+<p class="kicker">03 / 统一参数</p>
+<h2>统一参数、电价、成本与输出指标</h2>
+</div>
+<div class="small">Source: TaskA</div>
+</div>
+<div class="content grid-4">
+<div class="metric"><div class="value">14 kWp</div><div class="label">光伏装机容量</div></div>
+<div class="metric"><div class="value">62.5 kWh</div><div class="label">EV 电池容量</div></div>
+<div class="metric"><div class="value">5-40 kWh</div><div class="label">储能容量扫描</div></div>
+<div class="metric"><div class="value">2-10 kW</div><div class="label">储能功率扫描</div></div>
+<div class="tile gray"><h3>电价</h3><p class="subtitle">上海居民阶梯分时电价<br/>峰：6:00-22:00<br/>谷：22:00-次日 6:00</p></div>
+<div class="tile gray"><h3>上网电价</h3><p class="subtitle">0.4155 元/kWh<br/>用于计算售电收入</p></div>
+<div class="tile gray"><h3>储能约束</h3><p class="subtitle">SOC 40%-90%<br/>充放电效率 90%</p></div>
+<div class="tile gray"><h3>成本</h3><p class="subtitle">电池 1500 元/kWh<br/>PCS 800 元/kW</p></div>
+</div>
+<aside class="notes"><p>为保证不同任务之间的数据可比性，本报告统一采用 14 kWp 光伏装机、62.5 kWh EV 电池、5—40 kWh 储能容量扫描和 2—10 kW 储能功率扫描。所有经济性计算均在同一电价和成本假设下进行。</p><p>储能运行约束设定为 SOC 40%—90%、充放电效率 90%，并限制同一时刻不能同时充电和放电。经济性指标包括年净电费、自发自用率、购电峰值、等效循环次数和投资规模。</p></aside>
+</section>
+<section class="slide" data-section="Base load" data-title="基础负荷">
+<div class="header">
+<div>
+<p class="kicker">04 / 任务二</p>
+<h2>全年家庭基础负荷：日内波动与季节差异</h2>
+</div>
+<div class="small">Year load: 7139 kWh · Peak: 3.50 kW</div>
+</div>
+<div class="content grid-2">
+<div class="chart"><img alt="基础负荷曲线" src="../TaskB/Fig1_基础负荷曲线.png"/><div class="caption">TaskB / Fig1 基础负荷曲线</div></div>
+<div class="chart"><img alt="月平均负荷图" src="../TaskB/月平均负荷图.png"/><div class="caption">TaskB / 月平均负荷图</div></div>
+</div>
+<aside class="notes"><p>家庭基础负荷是系统仿真的底层输入。全年基础负荷约为 7139 kWh，最大功率约为 3.50 kW，表现出明显的日内波动和季节差异。</p><p>从工程意义上看，基础负荷决定了无 EV 和无储能情况下的用电基线。后续 EV 充电负荷、光伏出力和储能动作都叠加在这一基线上，因此基础负荷的峰值和时段分布会直接影响储能削峰和光伏消纳效果。</p></aside>
+</section>
+<section class="slide" data-section="PV model" data-title="光伏出力">
+<div class="header">
+<div>
+<p class="kicker">05 / 任务三</p>
+<h2>全年光伏出力：日内钟形、季节差异与天气扰动</h2>
+</div>
+<div class="small">PV matrix: 365 × 288</div>
+</div>
+<div class="content img-row">
+<div class="chart"><img alt="冬夏光伏出力对比" src="../TaskB/Fig3_冬夏光伏出力对比.png"/><div class="caption">冬夏典型日光伏出力</div></div>
+<div class="chart"><img alt="月度光伏发电量" src="../TaskB/月度光伏发电量图.png"/><div class="caption">月度光伏发电量</div></div>
+<div class="chart"><img alt="光伏矩阵三维图" src="../TaskB/光伏矩阵三维图.png"/><div class="caption">全年光伏矩阵三维图</div></div>
+</div>
+<aside class="notes"><p>光伏模型采用 365×288 的全年出力矩阵，对应一年中每一天的 5 分钟出力序列。结果显示光伏出力具有典型的日内钟形曲线，同时受到季节和天气扰动影响。</p><p>当前模型下年光伏发电量约为 24762 kWh，单位装机发电量约为 1769 kWh/kWp·年。该数值偏向高光伏出力情景，因此报告在结论部分将其作为乐观情景处理，并提出修正光伏情景以增强稳健性。</p></aside>
+</section>
+<section class="slide" data-section="Mismatch" data-title="时间错配">
+<div class="header">
+<div>
+<p class="kicker">06 / 关键矛盾</p>
+<h2>光伏与家庭负荷的时间错配，是储能和 EV 策略的出发点</h2>
+</div>
+<div class="small">PV surplus vs evening demand</div>
+</div>
+<div class="content split-35-65">
+<div class="bullets">
+<div class="bullet">白天光伏集中出力，家庭负荷未必同步增加。</div>
+<div class="bullet">早晚负荷上升时，光伏出力下降或为零。</div>
+<div class="bullet">储能与 EV 调度的意义是缓解这种时间错配。</div>
+</div>
+<div class="chart"><img alt="多能平衡净负荷图" src="../TaskB/Fig4_多能平衡净负荷图.png"/><div class="caption">TaskB / 多能平衡净负荷图</div></div>
+</div>
+<aside class="notes"><p>从净负荷曲线可以看出，光伏出力高峰与家庭主要用电时段并不完全重合。白天可能出现光伏富余并上网售电，而晚间负荷上升时又需要从电网购电。</p><p>这一时间错配解释了为什么储能和 EV 策略具有研究价值。储能可以转移电量，EV 充电策略可以移动负荷时段，两者共同决定系统是否能够降低购电峰值、提高光伏利用水平并改善经济性。</p></aside>
+</section>
+<section class="slide" data-section="EV behavior" data-title="EV 行为模型">
+<div class="header">
+<div>
+<p class="kicker">07 / 任务四</p>
+<h2>EV 被建模为有行为逻辑的可变负荷，而不是固定负荷</h2>
+</div>
+<div class="small">SOC · commute · weekend · long trip</div>
+</div>
+<div class="content">
+<div class="img-row">
+<div class="chart"><img alt="EV S1 SOC" src="../TaskC/fig_EV_S1/EV_S1_SOC_year.png"/><div class="caption">EV-S1 到家即充 SOC</div></div>
+<div class="chart"><img alt="EV S2 SOC" src="../TaskC/fig_EV_S2/EV_S2_SOC_year.png"/><div class="caption">EV-S2 谷时延迟 SOC</div></div>
+<div class="chart"><img alt="EV S3 SOC" src="../TaskC/fig_EV_S3/EV_S3_SOC_year.png"/><div class="caption">EV-S3 光伏富余优先 SOC</div></div>
+</div>
+<div class="grid-4">
+<div class="metric"><div class="value">35 km</div><div class="label">工作日通勤</div></div>
+<div class="metric"><div class="value">7 kW</div><div class="label">家用充电功率</div></div>
+<div class="metric"><div class="value">40%</div><div class="label">触发充电 SOC</div></div>
+<div class="metric"><div class="value">90%</div><div class="label">日常目标 SOC</div></div>
+</div>
+</div>
+<aside class="notes"><p>EV 在本报告中不是固定功率负荷，而是具有行为逻辑的可变负荷。模型考虑工作日通勤、周末出行、长途需求、充电阈值和目标 SOC，从而更接近真实家庭使用情景。</p><p>三种 SOC 曲线表明，充电策略会改变 EV 电池状态和充电时段。由于 EV 充电功率可达到 7 kW，其接入后对家庭峰值负荷的影响显著，因此必须将 EV 行为与储能选型放在同一框架中分析。</p></aside>
+</section>
+<section class="slide" data-section="EV strategies" data-title="EV 策略">
+<div class="header">
+<div>
+<p class="kicker">08 / EV 充电策略</p>
+<h2>三种 EV 策略改变的是负荷时段，而不是单纯年电量</h2>
+</div>
+<div class="small">S1 / S2 / S3</div>
+</div>
+<div class="content grid-2">
+<div class="chart"><img alt="EV峰值对比" src="../TaskC/fig_EV_compare/EV_strategy_peak_compare.png"/><div class="caption">EV 策略峰值对比</div></div>
+<div class="chart"><img alt="EV典型日总负荷" src="../TaskC/fig_EV_compare/EV_strategy_typical_day_total_compare.png"/><div class="caption">EV 典型日总负荷对比</div></div>
+</div>
+<aside class="notes"><p>报告比较三种 EV 充电策略：S1 为到家即充，S2 为谷时延迟充电，S3 为光伏富余优先充电。三种策略的年度充电电量接近，但负荷出现的时段明显不同。</p><p>结果说明，EV 对系统的关键影响不是增加了多少年电量，而是是否在晚高峰叠加充电负荷。充电时段的转移可以在不明显牺牲用车需求的情况下，显著改变家庭总负荷曲线。</p></aside>
+</section>
+<section class="slide" data-section="EV results" data-title="EV 结果">
+<div class="header">
+<div>
+<p class="kicker">09 / EV 结果表</p>
+<h2>谷时延迟最能削弱晚高峰，光伏优先更强调协同消纳</h2>
+</div>
+<div class="small">Source: TaskC / EV_strategy_compare.csv</div>
+</div>
+<div class="content">
+<table>
+<thead><tr><th>EV 策略</th><th class="num">EV 年电量</th><th class="num">年总负荷</th><th class="num">全年峰值</th><th class="num">晚高峰</th><th>解释</th></tr></thead>
+<tbody>
+<tr><td>EV-S1 到家即充</td><td class="num">2411.79 kWh</td><td class="num">9551.15 kWh</td><td class="num">10.50 kW</td><td class="num">10.50 kW</td><td>峰值最高</td></tr>
+<tr><td>EV-S2 谷时延迟</td><td class="num">2380.00 kWh</td><td class="num">9519.36 kWh</td><td class="num">8.81 kW</td><td class="num">3.50 kW</td><td>削晚高峰最明显</td></tr>
+<tr><td>EV-S3 光伏富余优先</td><td class="num">2368.73 kWh</td><td class="num">9508.09 kWh</td><td class="num">8.81 kW</td><td class="num">7.88 kW</td><td>强调白天光伏协同</td></tr>
+</tbody>
+</table>
+<div class="band"><h3>结论</h3><p class="subtitle">EV 是否造成峰值压力，关键不在于有没有 EV，而在于何时充电。</p></div>
+</div>
+<aside class="notes"><p>结果表明，S1 到家即充会使全年峰值和晚高峰负荷达到 10.50 kW；S2 谷时延迟将晚高峰降至 3.50 kW，削弱峰值压力最明显；S3 光伏优先则更强调白天光伏消纳。</p><p>因此，本报告将 S2 作为后续主场景。这样做的原因是：S2 在保障 EV 日常使用的同时，避免了 EV 与家庭晚高峰负荷叠加，更适合作为储能容量和策略评估的基准场景。</p></aside>
+</section>
+<section class="slide" data-section="Storage scan" data-title="储能扫描方法">
+<div class="header">
+<div>
+<p class="kicker">10 / 任务五</p>
+<h2>储能选型采用容量与功率双维度扫描</h2>
+</div>
+<div class="small">Capacity × Power × Cost × Life</div>
+</div>
+<div class="content grid-3">
+<div class="tile gray"><h3>扫描变量</h3><p class="subtitle">容量：5, 10, 15, 20, 30, 40 kWh<br/>功率：2, 3, 5, 7, 10 kW</p></div>
+<div class="tile gray"><h3>运行约束</h3><p class="subtitle">SOC 40%-90%<br/>效率 90%<br/>不能同时充放电</p></div>
+<div class="tile gray"><h3>评价指标</h3><p class="subtitle">年净电费<br/>自发自用率<br/>购电峰值<br/>等效循环<br/>投资回收期</p></div>
+<div class="metric"><div class="value">1500</div><div class="label">元/kWh 电池成本</div></div>
+<div class="metric"><div class="value">800</div><div class="label">元/kW PCS 成本</div></div>
+<div class="metric"><div class="value">1%</div><div class="label">年运维成本比例</div></div>
+</div>
+<aside class="notes"><p>储能选型采用容量和功率双维度扫描，而不是只固定某一电池容量进行单点比较。容量决定可转移的电量规模，功率决定单位时间内的充放电能力，两者共同影响削峰、自发自用和经济性。</p><p>评价指标包括年净电费、自发自用率、购电峰值、等效循环次数和投资规模。这样的指标组合能够同时反映经济收益、运行效果和电池寿命风险，避免只凭单一电费指标做结论。</p></aside>
+</section>
+<section class="slide" data-section="Capacity effect" data-title="容量影响">
+<div class="header">
+<div>
+<p class="kicker">11 / 容量影响</p>
+<h2>容量增加提高自发自用率，但不一定提高经济性</h2>
+</div>
+<div class="small">EV-S2 scenario</div>
+</div>
+<div class="content grid-2">
+<div class="chart"><img alt="储能年电费曲线" src="../TaskD/fig_cost_curves_S2.png"/><div class="caption">TaskD / S2 年净电费曲线</div></div>
+<div class="chart"><img alt="储能自发自用率" src="../TaskD/fig_selfuse_bar_S2.png"/><div class="caption">TaskD / S2 自发自用率图</div></div>
+</div>
+<aside class="notes"><p>容量增加通常会提高自发自用率，因为更多白天富余光伏可以被储能吸收并在晚间释放。但自发自用率提高并不等于经济性提高。</p><p>在当前假设中，上网电价相对不低，直接售电本身可以形成收入。储能运行会带来充放电损耗，同时还需要额外投资。因此，大容量储能虽然提高光伏本地消纳比例，却可能降低综合经济表现。</p></aside>
+</section>
+<section class="slide" data-section="Capacity results" data-title="容量结果表">
+<div class="header">
+<div>
+<p class="kicker">12 / 容量结果</p>
+<h2>5 kWh / 2 kW 是当前口径下投资风险最低的候选配置</h2>
+</div>
+<div class="small">Source: TaskD / storage_scan_S2.csv</div>
+</div>
+<div class="content">
+<table>
+<thead><tr><th>配置</th><th class="num">年净电费</th><th class="num">自发自用率</th><th class="num">投资</th><th>解释</th></tr></thead>
+<tbody>
+<tr><td>5 kWh / 2 kW</td><td class="num">-4149 元</td><td class="num">18.18%</td><td class="num">9100 元</td><td>投资最低，边际损失最小</td></tr>
+<tr><td>10 kWh / 2 kW</td><td class="num">-2982 元</td><td class="num">22.27%</td><td class="num">16600 元</td><td>自发自用率提高但收益下降</td></tr>
+<tr><td>20 kWh / 2 kW</td><td class="num">-1153 元</td><td class="num">29.88%</td><td class="num">31600 元</td><td>投资进一步增加</td></tr>
+<tr><td>40 kWh / 2 kW</td><td class="num">-165 元</td><td class="num">34.34%</td><td class="num">61600 元</td><td>容量最大但经济性最差</td></tr>
+</tbody>
+</table>
+<div class="band"><p class="subtitle">年净电费为负表示售电收入大于购电支出；数值越负，净收益越高。</p></div>
+</div>
+<aside class="notes"><p>在 EV-S2 场景下，5 kWh / 2 kW 配置的投资规模最低，年净电费表现最好，属于当前参数下边际损失最小、投资风险最低的候选方案。</p><p>需要强调的是，这一结论并不表示 5 kWh / 2 kW 是所有条件下的绝对最优。它只是在当前光伏出力、电价、上网电价和储能成本假设下，更符合低投资和低风险目标。</p></aside>
+</section>
+<section class="slide" data-section="Power effect" data-title="功率影响">
+<div class="header">
+<div>
+<p class="kicker">13 / 功率影响</p>
+<h2>储能功率同样不是越大越好</h2>
+</div>
+<div class="small">Peak and cycle trade-off</div>
+</div>
+<div class="content grid-2">
+<div class="chart"><img alt="储能峰值曲线" src="../TaskD/fig_peak_curves_S2.png"/><div class="caption">TaskD / S2 购电峰值曲线</div></div>
+<div class="chart"><img alt="储能循环曲线" src="../TaskD/fig_cycle_curves_S2.png"/><div class="caption">TaskD / S2 循环次数曲线</div></div>
+</div>
+<aside class="notes"><p>储能功率同样不是越大越好。功率过小会限制储能参与削峰和光伏消纳的能力，但功率过大可能增加 PCS 投资，并在某些策略下造成更高瞬时购电需求。</p><p>以固定容量情景为例，功率提升并不必然带来更低峰值或更好经济性。工程选型中应使功率与容量、负荷波动和调度策略相匹配，而不是简单追求高功率配置。</p></aside>
+</section>
+<section class="slide" data-section="Candidate" data-title="候选方案">
+<div class="header">
+<div>
+<p class="kicker">14 / 候选方案</p>
+<h2>三种 EV 场景下，候选方案均收敛到 5 kWh / 2 kW</h2>
+</div>
+<div class="small">Source: TaskD / candidates</div>
+</div>
+<div class="content">
+<table>
+<thead><tr><th>EV 场景</th><th>候选配置</th><th class="num">年净电费</th><th class="num">自发自用率</th><th class="num">峰值</th><th class="num">循环</th><th class="num">投资</th></tr></thead>
+<tbody>
+<tr><td>S1 到家即充</td><td>5 kWh / 2 kW</td><td class="num">-3519 元</td><td class="num">18.18%</td><td class="num">11.85 kW</td><td class="num">221.81</td><td class="num">9100</td></tr>
+<tr><td>S2 谷时延迟</td><td>5 kWh / 2 kW</td><td class="num">-4149 元</td><td class="num">18.18%</td><td class="num">8.81 kW</td><td class="num">221.81</td><td class="num">9100</td></tr>
+<tr><td>S3 光伏优先</td><td>5 kWh / 2 kW</td><td class="num">-4142 元</td><td class="num">18.29%</td><td class="num">8.81 kW</td><td class="num">222.69</td><td class="num">9100</td></tr>
+</tbody>
+</table>
+<div class="band"><p class="subtitle">该结果表示“当前参数下低投资方案边际损失最小”，不是绝对最优容量。</p></div>
+</div>
+<aside class="notes"><p>三种 EV 场景下，储能候选配置均收敛到 5 kWh / 2 kW。这说明在当前口径下，小容量、低功率储能具有更好的投资稳健性。</p><p>但该结果应被解释为“当前条件下的低风险候选方案”，而不是技术意义上的唯一最优。若未来电池成本下降、峰谷价差扩大或上网电价降低，更大容量储能的经济性可能改善。</p></aside>
+</section>
+<section class="slide" data-section="Dispatch strategy" data-title="策略优化">
+<div class="header">
+<div>
+<p class="kicker">15 / 任务六</p>
+<h2>固定 5 kWh / 2 kW 后，比较四种储能运行策略</h2>
+</div>
+<div class="small">PV first · TOU · Rule forecast · ML forecast</div>
+</div>
+<div class="content grid-4">
+<div class="tile"><h3>PV_FIRST</h3><p class="subtitle">光伏富余时充电，负荷缺口时放电。</p></div>
+<div class="tile"><h3>TOU_PRICE</h3><p class="subtitle">峰时放电，谷时低 SOC 少量补电。</p></div>
+<div class="tile"><h3>DAYAHEAD</h3><p class="subtitle">规则判断次日缺口，决定夜间补电。</p></div>
+<div class="tile"><h3>ML_FORECAST</h3><p class="subtitle">线性回归预测次日净负荷缺口。</p></div>
+</div>
+<aside class="notes"><p>在确定 5 kWh / 2 kW 作为基准配置后，报告进一步比较四种储能运行策略：光伏优先、峰谷电价、规则型日前预测和机器学习预测。</p><p>这一部分的研究重点从“选多大储能”转向“如何运行储能”。同一套硬件在不同策略下可能表现出不同的电费、循环次数和峰值特征，因此控制策略是家庭能源系统优化的重要组成部分。</p></aside>
+</section>
+<section class="slide" data-section="Dispatch results" data-title="策略结果图">
+<div class="header">
+<div>
+<p class="kicker">16 / 策略图表</p>
+<h2>最低电费与寿命友好之间存在取舍</h2>
+</div>
+<div class="small">EV-S2 main scenario</div>
+</div>
+<div class="content img-row four">
+<div class="chart"><img alt="策略电费对比" src="../TaskE/fig_strategy_cost_compare.png"/><div class="caption">年净电费</div></div>
+<div class="chart"><img alt="策略自发自用率" src="../TaskE/fig_strategy_selfuse_compare.png"/><div class="caption">自发自用率</div></div>
+<div class="chart"><img alt="策略峰值" src="../TaskE/fig_strategy_peak_compare.png"/><div class="caption">购电峰值</div></div>
+<div class="chart"><img alt="策略循环" src="../TaskE/fig_strategy_cycle_compare.png"/><div class="caption">等效循环次数</div></div>
+</div>
+<aside class="notes"><p>策略比较表明，最低年净电费与寿命友好之间存在取舍。峰谷电价策略可以获得略低的年净电费，但会增加等效循环次数，并抬高购电峰值。</p><p>光伏优先和预测型策略的收益略低，但循环次数更低、峰值更稳定，更适合重视电池寿命和运行可靠性的家庭场景。因此，策略选择应服务于具体运行目标。</p></aside>
+</section>
+<section class="slide" data-section="Strategy table" data-title="策略结果表">
+<div class="header">
+<div>
+<p class="kicker">17 / 结果表</p>
+<h2>峰谷策略收益略高，但循环与峰值代价明显</h2>
+</div>
+<div class="small">Source: TaskE / strategy_compare.csv</div>
+</div>
+<div class="content">
+<table>
+<thead><tr><th>策略</th><th class="num">年净电费</th><th class="num">自发自用率</th><th class="num">购电峰值</th><th class="num">等效循环</th></tr></thead>
+<tbody>
+<tr><td>光伏优先消纳</td><td class="num">-6135.13 元</td><td class="num">18.18%</td><td class="num">8.81 kW</td><td class="num">221.81</td></tr>
+<tr><td>峰谷电价策略</td><td class="num">-6162.33 元</td><td class="num">17.81%</td><td class="num">10.61 kW</td><td class="num">256.16</td></tr>
+<tr><td>规则型预测</td><td class="num">-6135.34 元</td><td class="num">18.17%</td><td class="num">8.81 kW</td><td class="num">221.71</td></tr>
+<tr><td>机器学习预测</td><td class="num">-6135.34 元</td><td class="num">18.17%</td><td class="num">8.81 kW</td><td class="num">221.71</td></tr>
+</tbody>
+</table>
+<div class="grid-3">
+<div class="metric"><div class="value">+27 元</div><div class="label">峰谷策略相对光伏优先的年收益提升</div></div>
+<div class="metric"><div class="value">+34 次</div><div class="label">峰谷策略增加的年等效循环</div></div>
+<div class="metric"><div class="value">+1.81 kW</div><div class="label">峰谷策略增加的购电峰值</div></div>
+</div>
+</div>
+<aside class="notes"><p>从定量结果看，峰谷电价策略相对光伏优先策略年收益提升约 27 元，但等效循环增加约 34 次，购电峰值增加约 1.81 kW。</p><p>这一结果说明，在当前参数下峰谷套利空间有限。若仅追求最低电费，峰谷策略可作为选择；若考虑电池寿命和系统稳定性，光伏优先或预测型策略更平衡。</p></aside>
+</section>
+<section class="slide" data-section="Forecast" data-title="典型日与 ML">
+<div class="header">
+<div>
+<p class="kicker">18 / 预测与运行</p>
+<h2>预测型策略提供可扩展框架，但当前场景边际收益有限</h2>
+</div>
+<div class="small">Rule forecast + ML forecast</div>
+</div>
+<div class="content grid-2">
+<div class="chart"><img alt="典型日策略运行" src="../TaskE/fig_strategy_typical_day.png"/><div class="caption">典型日 SOC 与储能功率</div></div>
+<div class="chart"><img alt="ML预测缺口" src="../TaskE/fig_ml_forecast_compare.png"/><div class="caption">ML 预测缺口与真实缺口</div></div>
+</div>
+<aside class="notes"><p>典型日运行图展示了储能 SOC 和功率随光伏、负荷变化的响应过程。预测型策略的作用是提前识别次日可能出现的净负荷缺口，并决定夜间是否需要补电。</p><p>当前场景下，机器学习预测与规则型预测结果非常接近，边际收益有限。这并不意味着 ML 方法无价值，而是说明在固定分时电价和高光伏出力条件下，复杂模型的优势尚未充分体现；若引入天气预测、动态电价和真实出行数据，预测型策略会更有扩展意义。</p></aside>
+</section>
+<section class="slide" data-section="Task 7" data-title="综合回答">
+<div class="header">
+<div>
+<p class="kicker">19 / 任务七</p>
+<h2>综合回答项目要求中的四个核心问题</h2>
+</div>
+<div class="small">Source: Task7</div>
+</div>
+<div class="content grid-2">
+<div class="tile"><h3>EV 加入有什么影响？</h3><p class="subtitle">峰值影响取决于充电时段。到家即充晚高峰 10.50 kW，谷时延迟降至 3.50 kW。</p></div>
+<div class="tile"><h3>储能容量越大越好吗？</h3><p class="subtitle">不是。容量提高自发自用率，但投资成本和售电损失使经济性下降。</p></div>
+<div class="tile"><h3>储能功率越大越好吗？</h3><p class="subtitle">不是。功率过大可能增加投资，并抬高瞬时购电峰值。</p></div>
+<div class="tile"><h3>经济性受什么影响最大？</h3><p class="subtitle">光伏年发电量、上网电价、电池成本、峰谷价差和 EV 充电策略。</p></div>
+</div>
+<aside class="notes"><p>综合前述结果，EV 接入后的影响主要取决于充电时段；储能容量和功率都不是越大越好；系统经济性高度依赖光伏发电量、电价结构、上网电价、电池成本和 EV 充电策略。</p><p>因此，本项目的核心结论是：家庭光伏—储能—EV 系统优化必须同时考虑设备容量、运行策略和用户目标，不能用单一指标直接给出绝对最优答案。</p></aside>
+</section>
+<section class="slide" data-section="Recommendation" data-title="条件化推荐">
+<div class="header">
+<div>
+<p class="kicker">20 / 推荐方案</p>
+<h2>不存在单一绝对最优，应按目标条件化推荐</h2>
+</div>
+<div class="small">Conditional recommendation</div>
+</div>
+<div class="content">
+<table>
+<thead><tr><th>目标</th><th>推荐方案</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td>最低投资</td><td>不加储能或 5 kWh / 2 kW</td><td>当前储能经济性不足，小容量风险最低</td></tr>
+<tr><td>最低年净电费</td><td>EV-S2 + 峰谷电价策略</td><td>电费最低，但循环次数增加</td></tr>
+<tr><td>寿命友好</td><td>EV-S2 + 光伏优先/预测型策略</td><td>循环次数较低，购电峰值更稳定</td></tr>
+<tr><td>光伏协同</td><td>EV-S3 + 小容量储能</td><td>强调白天光伏消纳</td></tr>
+<tr><td>创新展示</td><td>EV-S2 + ML 预测策略</td><td>展示可扩展智能调度框架</td></tr>
+<tr><td>鲁棒结论</td><td>加入修正光伏情景</td><td>避免只依赖高光伏出力假设</td></tr>
+</tbody>
+</table>
+</div>
+<aside class="notes"><p>最终推荐采用条件化表达。若目标是最低投资，可不加储能或选择 5 kWh / 2 kW；若目标是最低年净电费，可采用 EV-S2 配合峰谷电价策略；若目标是寿命友好，则应优先考虑光伏优先或预测型策略。</p><p>对于强调光伏协同的场景，EV-S3 与小容量储能更合适；对于强调创新展示的场景，ML 预测策略能够体现智能调度框架。不同目标对应不同方案，这是本报告相对单点优化更重要的结论。</p></aside>
+</section>
+<section class="slide" data-section="Risk" data-title="稳健性">
+<div class="header">
+<div>
+<p class="kicker">21 / 风险与稳健性</p>
+<h2>当前光伏数据属于高光伏出力情景，需要主动说明</h2>
+</div>
+<div class="small">PV data caveat</div>
+</div>
+<div class="content grid-2">
+<div class="grid-2">
+<div class="metric"><div class="value">24762</div><div class="label">当前光伏年发电量 kWh</div></div>
+<div class="metric"><div class="value">1769</div><div class="label">折算 kWh/kWp·年</div></div>
+<div class="metric"><div class="value">16800</div><div class="label">修正情景建议 kWh/年</div></div>
+<div class="metric"><div class="value">1200</div><div class="label">修正情景 kWh/kWp·年</div></div>
+</div>
+<div class="band">
+<h3>报告表述建议</h3>
+<p class="subtitle">当前结果作为高光伏出力情景。为了增强稳健性，建议补充或说明修正光伏情景，避免结论过度依赖偏乐观光伏数据。</p>
+</div>
+</div>
+<aside class="notes"><p>报告需要主动说明光伏数据的稳健性问题。当前光伏年发电量为 24762 kWh，对应 1769 kWh/kWp·年，属于偏高的光伏出力情景。</p><p>为避免结论过度依赖乐观假设，建议在正式报告中补充修正情景，例如按 16800 kWh/年、约 1200 kWh/kWp·年重新估算关键指标。这样可以检验储能经济性和推荐方案是否在不同光伏水平下仍然成立。</p></aside>
+</section>
+<section class="slide" data-section="Conclusion" data-title="最终总结">
+<div class="header">
+<div>
+<p class="kicker">22 / 总结</p>
+<h2>从“完成仿真”到“工程评估”的完整闭环</h2>
+</div>
+<div class="small">Final message</div>
+</div>
+<div class="content">
+<div class="grid-3">
+<div class="tile gray"><h3>核心矛盾</h3><p class="subtitle">光伏、家庭负荷和 EV 充电存在明显时间错配。</p></div>
+<div class="tile gray"><h3>核心方法</h3><p class="subtitle">全年 5 分钟仿真 + EV 行为建模 + 储能容量/功率/策略联合评估。</p></div>
+<div class="tile gray"><h3>核心结论</h3><p class="subtitle">不存在单一绝对最优，应按运行目标条件化推荐。</p></div>
+</div>
+<div class="quote">家庭光伏-储能-EV 系统的优化，不是简单加大储能，而是协调负荷时段、光伏消纳、电价机制与电池寿命。</div>
+</div>
+<aside class="notes"><p>本报告完成了从数据建模、行为仿真、储能扫描到策略评估的完整闭环。研究表明，家庭光伏—储能—EV 系统的主要矛盾是发电、负荷和充电行为之间的时间错配。</p><p>工程上，优化重点不应是简单增加储能容量，而应是协调 EV 充电时段、光伏消纳、储能充放电策略、电价机制和电池寿命。最终方案应根据用户目标进行条件化选择。</p></aside>
+</section>
+<section class="slide" data-section="Appendix" data-title="附录 B">
+<div class="header"><div><p class="kicker">Appendix A</p><h2>B：基础负荷与光伏图表补充</h2></div><div class="small">TaskB</div></div>
+<div class="content img-row four">
+<div class="chart"><img alt="含EV总负荷" src="../TaskB/Fig2_含EV总负荷曲线.png"/><div class="caption">含 EV 总负荷曲线</div></div>
+<div class="chart"><img alt="基础负荷" src="../TaskB/Fig1_基础负荷曲线.png"/><div class="caption">基础负荷</div></div>
+<div class="chart"><img alt="光伏对比" src="../TaskB/Fig3_冬夏光伏出力对比.png"/><div class="caption">冬夏光伏对比</div></div>
+<div class="chart"><img alt="净负荷" src="../TaskB/Fig4_多能平衡净负荷图.png"/><div class="caption">多能平衡净负荷</div></div>
+</div>
+<aside class="notes"><p>本附录集中展示基础负荷、含 EV 总负荷、典型光伏出力和多能平衡净负荷等图表，用于支撑正文中关于时间错配和系统输入特征的分析。</p><p>答辩中如需要解释基础数据来源、光伏出力形态或净负荷变化，可回到本页进行补充说明。</p></aside>
+</section>
+<section class="slide" data-section="Appendix" data-title="附录 C">
+<div class="header"><div><p class="kicker">Appendix B</p><h2>C：EV 三策略充电功率与典型日</h2></div><div class="small">TaskC</div></div>
+<div class="content img-row">
+<div class="chart"><img alt="S1充电功率" src="../TaskC/fig_EV_S1/EV_S1_charge_power_year.png"/><div class="caption">EV-S1 充电功率</div></div>
+<div class="chart"><img alt="S2充电功率" src="../TaskC/fig_EV_S2/EV_S2_charge_power_year.png"/><div class="caption">EV-S2 充电功率</div></div>
+<div class="chart"><img alt="S3充电功率" src="../TaskC/fig_EV_S3/EV_S3_charge_power_year.png"/><div class="caption">EV-S3 充电功率</div></div>
+</div>
+<aside class="notes"><p>本附录展示三种 EV 策略对应的全年充电功率分布。不同策略的主要差异不是年度充电电量，而是充电负荷在一天中的分布位置。</p><p>该页可用于回答 EV 是否一定会抬高晚高峰的问题。结果表明，合理延迟充电或光伏协同充电能够显著改变峰值压力。</p></aside>
+</section>
+<section class="slide" data-section="Appendix" data-title="附录 C2">
+<div class="header"><div><p class="kicker">Appendix C</p><h2>C：EV 策略 SOC 与月度结果</h2></div><div class="small">TaskC compare</div></div>
+<div class="content img-row">
+<div class="chart"><img alt="SOC对比" src="../TaskC/fig_EV_compare/EV_strategy_SOC_compare.png"/><div class="caption">SOC 对比</div></div>
+<div class="chart"><img alt="SOC箱线图" src="../TaskC/fig_EV_compare/EV_strategy_SOC_boxplot.png"/><div class="caption">SOC 箱线图</div></div>
+<div class="chart"><img alt="月度能量" src="../TaskC/fig_EV_compare/EV_strategy_monthly_energy_compare.png"/><div class="caption">月度充电量</div></div>
+</div>
+<aside class="notes"><p>本附录补充 EV 策略下 SOC 分布和月度充电量结果。SOC 对比可用于判断策略是否满足车辆使用需求，月度结果可用于观察季节性变化。</p><p>这些图表说明，EV 充电策略不仅影响电网侧负荷，也影响车辆电池状态，因此在设计策略时需要同时考虑用户出行可靠性。</p></aside>
+</section>
+<section class="slide" data-section="Appendix" data-title="附录 D">
+<div class="header"><div><p class="kicker">Appendix D</p><h2>D：S1/S2/S3 储能成本曲线</h2></div><div class="small">TaskD cost</div></div>
+<div class="content img-row">
+<div class="chart"><img alt="S1成本" src="../TaskD/fig_cost_curves_S1.png"/><div class="caption">S1 成本曲线</div></div>
+<div class="chart"><img alt="S2成本" src="../TaskD/fig_cost_curves_S2.png"/><div class="caption">S2 成本曲线</div></div>
+<div class="chart"><img alt="S3成本" src="../TaskD/fig_cost_curves_S3.png"/><div class="caption">S3 成本曲线</div></div>
+</div>
+<aside class="notes"><p>本附录给出 S1、S2、S3 三种 EV 场景下的储能成本曲线。通过多场景对比，可以验证候选配置并非只在单一 EV 策略下成立。</p><p>该页适合用于说明报告结论的稳健性：即使 EV 充电行为不同，当前参数下小容量储能仍具有较低投资风险。</p></aside>
+</section>
+<section class="slide" data-section="Appendix" data-title="附录 D2">
+<div class="header"><div><p class="kicker">Appendix E</p><h2>D：自发自用率、峰值与循环次数</h2></div><div class="small">TaskD metrics</div></div>
+<div class="content img-row">
+<div class="chart"><img alt="S3自发自用" src="../TaskD/fig_selfuse_bar_S3.png"/><div class="caption">S3 自发自用率</div></div>
+<div class="chart"><img alt="S3峰值" src="../TaskD/fig_peak_curves_S3.png"/><div class="caption">S3 购电峰值</div></div>
+<div class="chart"><img alt="S3循环" src="../TaskD/fig_cycle_curves_S3.png"/><div class="caption">S3 循环次数</div></div>
+</div>
+<aside class="notes"><p>本附录补充储能自发自用率、购电峰值和循环次数等指标。相比单独观察年净电费，这些指标能够更完整地反映储能配置的运行效果。</p><p>答辩中如果被问到为什么不选择更大容量或更高功率，可以用本页说明容量、功率、峰值和循环寿命之间存在权衡。</p></aside>
+</section>
+<section class="slide" data-section="Appendix" data-title="附录 E">
+<div class="header"><div><p class="kicker">Appendix F</p><h2>E：策略优化全部图表</h2></div><div class="small">TaskE</div></div>
+<div class="content img-row">
+<div class="chart"><img alt="典型日" src="../TaskE/fig_strategy_typical_day.png"/><div class="caption">典型日策略运行</div></div>
+<div class="chart"><img alt="循环" src="../TaskE/fig_strategy_cycle_compare.png"/><div class="caption">策略循环对比</div></div>
+<div class="chart"><img alt="ML" src="../TaskE/fig_ml_forecast_compare.png"/><div class="caption">ML 预测对比</div></div>
+</div>
+<aside class="notes"><p>本附录展示策略优化部分的典型日运行、循环次数和机器学习预测结果。它用于支撑正文中关于策略取舍和智能调度扩展性的讨论。</p><p>其中 ML 预测结果并未显著优于规则策略，原因在于当前场景下预测缺口有限。但该框架为未来接入天气、电价和出行数据预留了扩展空间。</p></aside>
+</section>
+<section class="slide" data-section="Appendix" data-title="附录 参数">
+<div class="header"><div><p class="kicker">Appendix G</p><h2>关键参数与答辩提示</h2></div><div class="small">A / Task7</div></div>
+<div class="content grid-2">
+<div class="tile"><h3>为什么净电费为负？</h3><p class="subtitle">年净电费 = 购电费用 - 售电收入。当前光伏发电量较高，售电收入大于购电支出。</p></div>
+<div class="tile"><h3>为什么储能不一定经济？</h3><p class="subtitle">上网电价不低，直接卖电已有收益；储能增加投资成本和充放电损耗。</p></div>
+<div class="tile"><h3>为什么 ML 没明显更好？</h3><p class="subtitle">固定分时电价 + 高光伏出力下，预测缺电空间小，复杂模型边际收益有限。</p></div>
+<div class="tile"><h3>结果是否依赖光伏数据？</h3><p class="subtitle">是。当前为高光伏情景，建议补充修正光伏情景增强稳健性。</p></div>
+</div>
+<aside class="notes"><p>本附录整理答辩中容易被问到的关键问题，包括净电费为负的原因、储能经济性不足的原因、ML 边际收益有限的原因以及光伏数据依赖性。</p><p>这些问题的共同点是都涉及模型假设。正式答辩时应主动说明假设条件，避免把情景结果误读为普遍结论。</p></aside>
+</section>
+<div class="progress"><span id="progressBar"></span></div>
+</main>
+<script>
+    const slides = [...document.querySelectorAll('.slide')];
+    const deck = document.getElementById('deck');
+    const progressBar = document.getElementById('progressBar');
+    let index = 0;
+    let presenterWin = null;
+
+    slides.forEach((slide, i) => {
+      slide.dataset.page = `${i + 1} / ${slides.length}`;
+    });
+
+    function notesOf(i) {
+      const n = slides[i]?.querySelector('.notes');
+      return n ? n.innerHTML : '<p>本页暂无讲稿。</p>';
+    }
+
+    function titleOf(i) {
+      return slides[i]?.dataset.title || `Slide ${i + 1}`;
+    }
+
+    function go(i) {
+      index = Math.max(0, Math.min(slides.length - 1, i));
+      window.index = index;
+      slides.forEach((s, k) => s.classList.toggle('is-active', k === index));
+      progressBar.style.width = `${((index + 1) / slides.length) * 100}%`;
+      location.hash = `/${index + 1}`;
+      updatePresenter();
+    }
+
+    function openPresenter() {
+      if (presenterWin && !presenterWin.closed) {
+        presenterWin.focus();
+        updatePresenter();
+        return;
+      }
+      presenterWin = window.open('', 'presenter', 'width=1280,height=760');
+      presenterWin.document.write(`
+        <!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+        <title>Presenter</title>
+        <style>
+          body{margin:0;font-family:"Manrope","Microsoft YaHei",Arial,sans-serif;background:#f7f7f7;color:#1a1a1a}
+          .wrap{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;height:100vh;gap:12px;padding:12px}
+          .card{background:#fff;border:1px solid #e0e0e0;display:grid;grid-template-rows:auto 1fr;min-height:0}
+          .head{padding:10px 12px;border-bottom:1px solid #e0e0e0;color:#0f62fe;font-size:13px}
+          .body{padding:16px;overflow:auto;min-height:0}
+          .preview{font-size:34px;font-weight:300;line-height:1.25}
+          .script{font-size:22px;line-height:1.55}
+          .timer{font-size:48px;font-weight:300;color:#161616}
+          button{border:0;background:#0f62fe;color:#fff;padding:10px 14px;margin-right:8px}
+        </style></head><body>
+        <div class="wrap">
+          <div class="card"><div class="head">CURRENT</div><div class="body preview" id="cur"></div></div>
+          <div class="card"><div class="head">NEXT</div><div class="body preview" id="next"></div></div>
+          <div class="card"><div class="head">SPEAKER SCRIPT</div><div class="body script" id="script"></div></div>
+          <div class="card"><div class="head">TIMER</div><div class="body"><div class="timer" id="timer">00:00</div><p id="count"></p><button onclick="opener.go(opener.index-1)">Prev</button><button onclick="opener.go(opener.index+1)">Next</button></div></div>
+        </div>
+        <script>
+          const start = Date.now();
+          setInterval(()=>{const s=Math.floor((Date.now()-start)/1000); const m=String(Math.floor(s/60)).padStart(2,'0'); const ss=String(s%60).padStart(2,'0'); document.getElementById('timer').textContent=m+':'+ss},500);
+          document.addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key===' ') opener.go(opener.index+1); if(e.key==='ArrowLeft') opener.go(opener.index-1);});
+        <\/script>
+        </body></html>`);
+      presenterWin.document.close();
+      updatePresenter();
+    }
+
+    function updatePresenter() {
+      if (!presenterWin || presenterWin.closed) return;
+      presenterWin.document.getElementById('cur').textContent = titleOf(index);
+      presenterWin.document.getElementById('next').textContent = titleOf(Math.min(index + 1, slides.length - 1));
+      presenterWin.document.getElementById('script').innerHTML = notesOf(index);
+      presenterWin.document.getElementById('count').textContent = `${index + 1} / ${slides.length}`;
+    }
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') go(index + 1);
+      if (e.key === 'ArrowLeft' || e.key === 'PageUp') go(index - 1);
+      if (e.key === 'Home') go(0);
+      if (e.key === 'End') go(slides.length - 1);
+      if (e.key.toLowerCase() === 's') openPresenter();
+      if (e.key.toLowerCase() === 'f') deck.requestFullscreen?.();
+    });
+
+    const match = location.hash.match(/\/(\d+)/);
+    go(match ? Number(match[1]) - 1 : 0);
+    window.go = go;
+    window.index = index;
+    setInterval(() => window.index = index, 100);
+  </script>
+</body>
+</html>
