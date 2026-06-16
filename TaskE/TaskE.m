@@ -51,11 +51,12 @@ ml_forecast_result = table();
 for e = 1:numel(ev_files)
     ev_table = readtable(ev_files{e});
     P_load = align_length(ev_table.(ev_cols{e}), N_expected);
+    rule_pred_deficit = build_rule_forecast(P_load, P_pv, dt, day_index);
     [ml_pred_deficit, ml_table] = build_ml_forecast(P_load, P_pv, dt, day_index);
 
     for s = 1:numel(strategy_ids)
         [metric, ts] = simulate_strategy(P_load, P_pv, param, strategy_ids{s}, ...
-            dt, is_peak, hour_of_day, day_index, ml_pred_deficit);
+            dt, is_peak, hour_of_day, day_index, rule_pred_deficit, ml_pred_deficit);
 
         all_rows(end+1, :) = {ev_names{e}, strategy_ids{s}, strategy_names{s}, ...
             metric.E_buy_year, metric.E_sell_year, metric.Cost_year, ...
@@ -140,7 +141,7 @@ function [pred_deficit, ml_table] = build_ml_forecast(P_load, P_pv, dt, day_inde
         idx = day_index == d;
         daily_load(d) = sum(P_load(idx)) * dt;
         daily_pv(d) = sum(P_pv(idx)) * dt;
-        daily_deficit(d) = max(0, daily_load(d) - daily_pv(d));
+        daily_deficit(d) = sum(max(P_load(idx) - P_pv(idx), 0)) * dt;
     end
 
     X = [];
@@ -170,7 +171,21 @@ function [pred_deficit, ml_table] = build_ml_forecast(P_load, P_pv, dt, day_inde
         'NightChargeFlag', 'IsTestSet'});
 end
 
-function [metric, ts] = simulate_strategy(P_load, P_pv, param, strategy_id, dt, is_peak, hour_of_day, day_index, ml_pred_deficit)
+function pred_deficit = build_rule_forecast(P_load, P_pv, dt, day_index)
+    n_day = max(day_index);
+    daily_deficit = zeros(n_day, 1);
+    for d = 1:n_day
+        idx = day_index == d;
+        daily_deficit(d) = sum(max(P_load(idx) - P_pv(idx), 0)) * dt;
+    end
+
+    pred_deficit = daily_deficit;
+    for d = 4:n_day
+        pred_deficit(d) = mean(daily_deficit(d-3:d-1));
+    end
+end
+
+function [metric, ts] = simulate_strategy(P_load, P_pv, param, strategy_id, dt, is_peak, hour_of_day, day_index, rule_pred_deficit, ml_pred_deficit)
     N = length(P_load);
     SOC = zeros(N+1, 1);
     SOC(1) = param.SOC_init;
@@ -189,7 +204,7 @@ function [metric, ts] = simulate_strategy(P_load, P_pv, param, strategy_id, dt, 
     daily_deficit = zeros(max(day_index), 1);
     for d = 1:max(day_index)
         idx = day_index == d;
-        daily_deficit(d) = max(0, sum((P_load(idx) - P_pv(idx)) * dt));
+        daily_deficit(d) = sum(max(P_load(idx) - P_pv(idx), 0)) * dt;
     end
 
     for t = 1:N
@@ -219,7 +234,7 @@ function [metric, ts] = simulate_strategy(P_load, P_pv, param, strategy_id, dt, 
 
             case 'DAYAHEAD_FORECAST'
                 d = min(day_index(t) + 1, max(day_index));
-                tomorrow_deficit = daily_deficit(d);
+                tomorrow_deficit = rule_pred_deficit(d);
                 if net > 0
                     P_ch = min(net, P_ch_max);
                 elseif is_peak(t)
@@ -232,12 +247,19 @@ function [metric, ts] = simulate_strategy(P_load, P_pv, param, strategy_id, dt, 
             case 'ML_FORECAST'
                 d = min(day_index(t) + 1, max(day_index));
                 tomorrow_deficit = ml_pred_deficit(d);
+                if tomorrow_deficit > 15
+                    ml_target_soc = param.SOC_forecast_target;
+                elseif tomorrow_deficit > 10
+                    ml_target_soc = 0.62;
+                else
+                    ml_target_soc = param.SOC_min;
+                end
                 if net > 0
                     P_ch = min(net, P_ch_max);
                 elseif is_peak(t)
                     P_dis = min(-net, P_dis_max);
-                elseif ~is_peak(t) && tomorrow_deficit > param.cap && SOC(t) < param.SOC_forecast_target
-                    target_power = (param.SOC_forecast_target - SOC(t)) * param.cap / dt / param.eta_ch;
+                elseif ~is_peak(t) && tomorrow_deficit > 10 && SOC(t) < ml_target_soc
+                    target_power = (ml_target_soc - SOC(t)) * param.cap / dt / param.eta_ch;
                     P_ch = min([param.pwr, P_ch_max, target_power]);
                 end
         end
